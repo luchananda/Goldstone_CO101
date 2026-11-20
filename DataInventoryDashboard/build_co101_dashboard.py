@@ -22,7 +22,7 @@ Type identification (also shown in the page's Legend):
   UNMATCHED science-type run on a logged DOY whose start time is outside every logged window
   CW        planned from masterlog 'CW, 4 hops (10 s)' rows
   DAS       GSSR DAS spectrum/voltage RDF records (PSD*/VOLT*); a PSD with nspec == planned CW
-            runs and target 2000CO101 is flagged as a CW candidate (not verified)
+            runs and target 2000CO101 is flagged as a CW record (not verified)
 """
 import datetime as dt
 import html
@@ -60,7 +60,7 @@ PLAN_ORDER = ["IMAGING", "RANGING", "CW"]
 COLORS = {
     "IMAGING": "#2563eb", "RANGING": "#0d9488", "CW": "#7c3aed",
     "LPBK": "#9ca3af", "SKY": "#cbd5e1", "NO_LOG": "#f59e0b", "UNMATCHED": "#ef4444",
-    "DAS": "#db2777",
+    "CW_RECORD": "#db2777",
 }
 
 
@@ -129,7 +129,7 @@ def match_block(blocks, date_iso, hhmmss):
 def classify_top(name):
     low = name.lower()
     if name.startswith(("PSD", "VOLT")) and low.endswith(".rdf"):
-        return "DAS"
+        return "CW"  # per JPL: PSD*/VOLT* *.rdf are the CW files
     if name.startswith("drv"):
         return "CONTROL"
     if low.startswith("readme"):
@@ -161,7 +161,7 @@ def scan_raw(day_path, day_blocks, has_log_rows):
         m = RAW_RE.match(f.name)
         if not m:
             entry = {"name": f.name, "category": classify_top(f.name), "size": f.stat().st_size}
-            if entry["category"] == "DAS":
+            if entry["category"] == "CW":
                 entry["header"] = parse_rdf_header(f)
                 entry["kind"] = "PSD spectrum" if f.name.startswith("PSD") else "VOLT record"
             top_files.append(entry)
@@ -222,7 +222,7 @@ def make_notes(rec):
         cw_das = [d for d in rec["das"] if d.get("kind") == "PSD spectrum"
                   and d.get("header", {}).get("nspec") == rec["planned"]["CW"]]
         if cw_das:
-            notes.append(f"CW candidate: {cw_das[0]['name']} has nspec={rec['planned']['CW']} "
+            notes.append(f"CW record: {cw_das[0]['name']} has nspec={rec['planned']['CW']} "
                          f"(one per planned CW run), target {cw_das[0]['header'].get('target')}, "
                          f"pol {cw_das[0]['header'].get('polarization')}. Not verified against raw CW data.")
         else:
@@ -276,7 +276,7 @@ def build_days(blocks):
             rec["raw_files"] = raw_recs
             rec["raw"] = dict(Counter(r["category"] for r in raw_recs))
             rec["top_files"] = top_files
-            rec["das"] = [t for t in top_files if t["category"] == "DAS"]
+            rec["das"] = [t for t in top_files if t["category"] == "CW"]
             rec["orphan_txt"] = orphan
         rec["notes"] = make_notes(rec)
         days.append(rec)
@@ -323,6 +323,8 @@ def scan_2009_level(root):
             note = f"{len(names)} FITS files"
             if any("20090926" in n for n in names):
                 note += " named run20090926*: that is Sep 26 (an excluded day), check"
+        elif name.endswith(".zip"):
+            continue  # user: ignore (Arecibo images)
         else:
             cat = "OTHER"
         items.append({"name": name, "category": cat, "status": status, "note": note})
@@ -460,8 +462,8 @@ def render_html(days, blocks, obs_list, top_items, generated):
         (total_lpbk, "loopback cal runs on disk"),
         (total_sky, "sky cal runs on disk"),
         (planned_cw, "CW runs planned in masterlog"),
-        (das_n, "DAS spectrum/voltage records"),
-        (cw_candidates, "CW candidate records (unverified)"),
+        (das_n, "CW records on disk (PSD/VOLT)"),
+        (cw_candidates, "CW record records (unverified)"),
     ]:
         out.append(f"<div class='card'><div class='n'>{n}</div><div class='l'>{l}</div></div>")
     out.append("</div>")
@@ -472,12 +474,12 @@ def render_html(days, blocks, obs_list, top_items, generated):
     out.append("<table><tr><th class='l'>Date</th><th>DOY</th><th class='l'>Folder</th>"
                "<th>IMAGING<br>on disk / planned</th><th>RANGING<br>on disk / planned</th>"
                "<th>CW<br>planned runs</th><th>CW on disk</th>"
-               "<th>LPBK</th><th>SKY</th><th>NO_LOG / UNMATCHED</th><th>DAS records</th>"
+               "<th>LPBK</th><th>SKY</th><th>NO_LOG / UNMATCHED</th><th>CW records (PSD/VOLT)</th>"
                "<th class='l'>Notes</th></tr>")
     for d in days:
         cw_on_disk = ""
         if d["planned"].get("CW"):
-            cw_on_disk = "<span class='warn'>candidate</span>" if any(
+            cw_on_disk = "<span class='ok'>present</span>" if any(
                 x.get("kind") == "PSD spectrum" and x.get("header", {}).get("nspec") == d["planned"]["CW"]
                 for x in d["das"]) else "<span class='bad'>none</span>"
         das_str = ", ".join(html.escape(x["name"]) for x in d["das"]) or "<span class='dim'>–</span>"
@@ -532,15 +534,12 @@ def render_html(days, blocks, obs_list, top_items, generated):
         else:
             out.append("<div class='note'>No raw run files in this folder yet.</div>")
         if d["das"]:
-            out.append("<div class='note'><b>DAS records:</b></div><ul>")
+            out.append("<div class='note'><b>CW records (PSD/VOLT):</b></div><ul>")
             for x in d["das"]:
                 h = x.get("header", {})
-                out.append(f"<li>{tag('DAS')} <code>{html.escape(x['name'])}</code> &mdash; {html.escape(x.get('kind', ''))}: "
-                           f"target {html.escape(str(h.get('target')))}, pol {html.escape(str(h.get('polarization')))}, "
-                           f"nspec {h.get('nspec')}, ndata {h.get('ndata')}, width {h.get('width')}, "
-                           f"height {h.get('height')}, nchan {h.get('nchan')}, {html.escape(str(h.get('dasid')))}</li>")
+                out.append(f"<li>{tag('CW')} &mdash; CW data: GSSR RDF records <code>PSD*.rdf</code> (OC) and <code>VOLT*.rdf</code> (SC). Headers give target, polarization and number of spectra (nspec). Per the JPL data notes, these are the only CW files.</li>")
             out.append("</ul>")
-        other = [t for t in d["top_files"] if t["category"] != "DAS"]
+        other = [t for t in d["top_files"] if t["category"] not in ("CW",)]
         if other:
             out.append("<div class='note'><b>Other files:</b> " +
                        ", ".join(f"<code>{html.escape(t['name'])}</code> ({t['category']})" for t in other)
@@ -583,10 +582,7 @@ def render_html(days, blocks, obs_list, top_items, generated):
                "<code>-lpbk</code> / <code>-sky</code> filename suffix.</li>")
     out.append(f"<li>{tag('CW')} &mdash; the masterlog's <code>CW, 4 hops (10 s)</code> rows. No raw CW run "
                "files are on disk for the included days.</li>")
-    out.append(f"<li>{tag('DAS')} &mdash; GSSR DAS RDF records (<code>PSD*</code> spectra, <code>VOLT*</code> "
-               "voltage). Their headers give the target, polarization and number of spectra. A PSD whose "
-               "<code>nspec</code> equals the planned CW run count is a <b>candidate</b> for the CW data. "
-               "It is not verified yet.</li>")
+    out.append(f"<li>{tag('CW')} &mdash; CW data: GSSR RDF records <code>PSD*.rdf</code> (OC) and <code>VOLT*.rdf</code> (SC). Headers give target, polarization and number of spectra (nspec). Per the JPL data notes, these are the only CW files.</li>")
     out.append("<li><b>Filenames mislead in general:</b> the SHAPE set type inside a .obs file is the reliable test "
                "(<code>doppler</code> = CW, <code>delay-doppler</code> = DD).</li>")
     out.append("</ul></body></html>")
