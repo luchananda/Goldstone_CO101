@@ -54,6 +54,7 @@ CAT_OF = {"CW": "CW", "ranging": "RANGING", "imaging": "IMAGING"}
 RDF_KEYS = {"type", "ndata", "height", "target", "dasid", "width", "size", "polarization",
             "machine", "nchan", "ntags", "nspec", "format"}
 
+SAMPLE_RECS = []
 SCIENCE_CATS = ["IMAGING", "RANGING", "NO_LOG", "UNMATCHED"]
 RAW_ORDER = ["IMAGING", "RANGING", "LPBK", "SKY", "NO_LOG", "UNMATCHED"]
 PLAN_ORDER = ["IMAGING", "RANGING", "CW"]
@@ -350,7 +351,16 @@ def obs_summary(path, root):
 
 
 # ---------------------------------------------------------------- HTML
+TAB_SCRIPT = """<script>
+function showTab(id){
+  for (const t of ['tab-inv','tab-samp']) document.getElementById(t).style.display = (t===id)?'block':'none';
+  document.getElementById('b-inv').classList.toggle('on', id==='tab-inv');
+  document.getElementById('b-samp').classList.toggle('on', id==='tab-samp');
+}
+</script>"""
 CSS = """
+.tabs{margin:14px 0 6px} .tabbtn{font:inherit;font-size:13px;padding:6px 14px;border:1px solid #d1d5db;background:#fff;border-radius:6px 6px 0 0;cursor:pointer;margin-right:4px}
+.tabbtn.on{background:#111;color:#fff;border-color:#111}
 body{font-family:-apple-system,Helvetica,Arial,sans-serif;margin:24px;color:#111;background:#fafafa}
 h1{font-size:22px;margin:0 0 4px} h2{font-size:17px;margin:28px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px}
 .sub{color:#555;font-size:13px} .cards{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}
@@ -454,7 +464,9 @@ def render_html(days, blocks, obs_list, top_items, generated):
            f"<div class='sub'>Snapshot {html.escape(generated)} from <code>{html.escape(display_root())}</code>. "
            "Read-only scan. Goldstone data only. Excluded folders: sep26, sep28, sep29, sep30 (no Goldstone "
            "data). Downloads are still in progress; re-run the script to refresh.</div>",
-           "<div class='cards'>"]
+           "<div class='tabs'><button id='b-inv' class='tabbtn on' onclick=\"showTab('tab-inv')\">Inventory</button>"
+           "<button id='b-samp' class='tabbtn' onclick=\"showTab('tab-samp')\">Sample images</button></div>",
+           "<div id='tab-inv'>", "<div class='cards'>"]
     for n, l in [
         (days_with_folder, "day folders on disk (included)"),
         (total_sci, "science runs on disk (IMAGING + RANGING + other)"),
@@ -585,7 +597,115 @@ def render_html(days, blocks, obs_list, top_items, generated):
     out.append(f"<li>{tag('CW')} &mdash; CW data: GSSR RDF records <code>PSD*.rdf</code> (OC) and <code>VOLT*.rdf</code> (SC). Headers give target, polarization and number of spectra (nspec). Per the JPL data notes, these are the only CW files.</li>")
     out.append("<li><b>Filenames mislead in general:</b> the SHAPE set type inside a .obs file is the reliable test "
                "(<code>doppler</code> = CW, <code>delay-doppler</code> = DD).</li>")
-    out.append("</ul></body></html>")
+    out.append("</ul></div>")
+    out.append("<div id='tab-samp' style='display:none'>" + samples_html(SAMPLE_RECS, days) + "</div>")
+    out.append(TAB_SCRIPT)
+    out.append("</body></html>")
+    return "\n".join(out)
+
+
+# ---------------------------------------------------------------- sample images
+SAMPLE_TYPES = ["IMAGING", "LPBK", "SKY"]
+N_SAMPLES = 2
+
+
+def pick_spread(items, n):
+    if len(items) <= n:
+        return list(items)
+    idx = sorted({int(round(x)) for x in [i * (len(items) - 1) / (n - 1) for i in range(n)]})
+    return [items[i] for i in idx]
+
+
+def make_samples(days):
+    """Render up to N_SAMPLES images per date per decodable type. Returns records for the page."""
+    import numpy as np
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    sdir = OUT_DIR / "samples"
+    sdir.mkdir(parents=True, exist_ok=True)
+    for old in sdir.glob("*.png"):
+        old.unlink()
+    recs = []
+    for d in days:
+        if not d["folder_present"]:
+            continue
+        folder = DATA_ROOT / d["folder"]
+        for cat in SAMPLE_TYPES:
+            cands = [r for r in d["raw_files"] if r["category"] == cat]
+            item = {"date": d["date"], "type": cat, "available": len(cands), "images": []}
+            for r in pick_spread(cands, N_SAMPLES):
+                arr = np.fromfile(folder / r["file"], dtype="<f4")
+                if arr.size % 128:
+                    continue
+                grid = arr.reshape(-1, 128)
+                lo, hi = np.percentile(grid, [1, 99.5])
+                fname = f"{d['date']}_{cat}_{r['time_utc'].replace(':', '')}.png"
+                fig, ax = plt.subplots(figsize=(4.8, 3.8))
+                im = ax.imshow(grid, aspect="auto", origin="lower", cmap="viridis", vmin=lo, vmax=hi)
+                ax.set_title(f"{dt.date.fromisoformat(d['date']).strftime('%b %d %Y')} {r['time_utc']} UTC\n"
+                             f"{r['label']} | {grid.shape[0]} rows x 128 cols", fontsize=8)
+                ax.set_xlabel("FFT bin", fontsize=8)
+                ax.set_ylabel("code row", fontsize=8)
+                ax.tick_params(labelsize=7)
+                fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04).ax.tick_params(labelsize=7)
+                fig.tight_layout()
+                fig.savefig(sdir / fname, dpi=80)
+                plt.close(fig)
+                item["images"].append({"file": f"samples/{fname}", "time_utc": r["time_utc"],
+                                       "rows": int(grid.shape[0]), "label": r["label"]})
+            recs.append(item)
+    return recs
+
+
+def samples_html(recs, days):
+    out = ["<p class='note'>Samples: up to two runs per date per type, picked evenly across the day. "
+           "Colour scale is clipped at the 1st and 99.5th percentiles so faint echoes show. "
+           "Rows = code length (255 or 127).</p>"]
+    out.append("<h2>Images by date and type</h2>")
+    by_date = {}
+    for r in recs:
+        by_date.setdefault(r["date"], []).append(r)
+    for d in days:
+        if not d["folder_present"]:
+            continue
+        out.append(f"<h3 style='font-size:15px;margin:14px 0 4px'>{dt.date.fromisoformat(d['date']).strftime('%a %b %d %Y')} (DOY {d['doy']})</h3>")
+        for r in by_date.get(d["date"], []):
+            if not r["images"]:
+                out.append(f"<div class='note'>{tag(r['type'])} no decodable runs on disk.</div>")
+                continue
+            note = ""
+            if r["available"] > len(r["images"]):
+                note = f" ({r['available']} on disk, showing {len(r['images'])})"
+            elif r["available"] < N_SAMPLES:
+                note = f" (only {r['available']} on disk)"
+            out.append(f"<div class='note'>{tag(r['type'])}{note}</div>")
+            out.append("<div style='display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 8px'>")
+            for im in r["images"]:
+                out.append(f"<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'>"
+                           f"<img src='{html.escape(im['file'])}' alt='{html.escape(r['type'])} {im['time_utc']}' "
+                           f"style='width:360px;display:block'>"
+                           f"<figcaption class='note'>{im['time_utc']} UTC &middot; {im['rows']} rows</figcaption></figure>")
+            out.append("</div>")
+    out.append("<h2>CW (continuous wave)</h2>")
+    out.append("<p class='note'>CW records are GSSR DAS files (<code>PSD*.rdf</code> = OC spectra, "
+               "<code>VOLT*.rdf</code> = SC voltage). Their headers decode (target, polarization, nspec), "
+               "but the numeric data layout is not decoded yet, so no CW image is shown here.</p>")
+    out.append("<table><tr><th class='l'>Date</th><th class='l'>File</th><th class='l'>Header</th>"
+               "<th class='l'>Image</th></tr>")
+    any_cw = False
+    for d in days:
+        for x in d["das"]:
+            any_cw = True
+            h = x.get("header", {})
+            out.append(f"<tr><td class='l'>{d['date']}</td><td class='l'><code>{html.escape(x['name'])}</code></td>"
+                       f"<td class='l'>target {html.escape(str(h.get('target')))}, pol {html.escape(str(h.get('polarization')))}, "
+                       f"nspec {h.get('nspec')}, nchan {h.get('nchan')}, {html.escape(str(h.get('dasid')))}</td>"
+                       f"<td class='l'><span class='warn'>not decoded yet</span></td></tr>")
+    if not any_cw:
+        out.append("<tr><td class='l' colspan='4'>No CW records on the included days.</td></tr>")
+    out.append("</table>")
     return "\n".join(out)
 
 
@@ -600,6 +720,8 @@ def main():
                 if not (set(p.relative_to(DATA_ROOT).parts) & EXCLUDED_DAYS)
                 and not re.search(r"_(26|28|29|30)[a-z]*\.", p.name)]
     generated = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    global SAMPLE_RECS
+    SAMPLE_RECS = make_samples(days)
 
     OUT_DIR.mkdir(exist_ok=True)
     inv = {"generated": generated, "data_root": display_root(), "excluded_days": sorted(EXCLUDED_DAYS),

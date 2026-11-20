@@ -1,4 +1,6 @@
 <!doctype html><html><head><meta charset='utf-8'><title>2000CO101 Goldstone 2009 - data dashboard</title><style>
+.tabs{margin:14px 0 6px} .tabbtn{font:inherit;font-size:13px;padding:6px 14px;border:1px solid #d1d5db;background:#fff;border-radius:6px 6px 0 0;cursor:pointer;margin-right:4px}
+.tabbtn.on{background:#111;color:#fff;border-color:#111}
 body{font-family:-apple-system,Helvetica,Arial,sans-serif;margin:24px;color:#111;background:#fafafa}
 h1{font-size:22px;margin:0 0 4px} h2{font-size:17px;margin:28px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px}
 .sub{color:#555;font-size:13px} .cards{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}
@@ -16,7 +18,9 @@ summary{cursor:pointer;font-weight:600} code{font-size:12px}
 .legend span.sw{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:middle;margin:0 4px 0 12px}
 </style></head><body>
 <h1>2000CO101 (CO101) &mdash; Goldstone DSS-14, September 2009</h1>
-<div class='sub'>Snapshot 2026-11-20 15:55:01 from <code>./Goldstone/2009</code>. Read-only scan. Goldstone data only. Excluded folders: sep26, sep28, sep29, sep30 (no Goldstone data). Downloads are still in progress; re-run the script to refresh.</div>
+<div class='sub'>Snapshot 2026-11-20 15:58:12 from <code>./Goldstone/2009</code>. Read-only scan. Goldstone data only. Excluded folders: sep26, sep28, sep29, sep30 (no Goldstone data). Downloads are still in progress; re-run the script to refresh.</div>
+<div class='tabs'><button id='b-inv' class='tabbtn on' onclick="showTab('tab-inv')">Inventory</button><button id='b-samp' class='tabbtn' onclick="showTab('tab-samp')">Sample images</button></div>
+<div id='tab-inv'>
 <div class='cards'>
 <div class='card'><div class='n'>4</div><div class='l'>day folders on disk (included)</div></div>
 <div class='card'><div class='n'>301</div><div class='l'>science runs on disk (IMAGING + RANGING + other)</div></div>
@@ -427,4 +431,77 @@ summary{cursor:pointer;font-weight:600} code{font-size:12px}
 <li><span class="tag" style="background:#7c3aed">CW</span> &mdash; the masterlog's <code>CW, 4 hops (10 s)</code> rows. No raw CW run files are on disk for the included days.</li>
 <li><span class="tag" style="background:#7c3aed">CW</span> &mdash; CW data: GSSR RDF records <code>PSD*.rdf</code> (OC) and <code>VOLT*.rdf</code> (SC). Headers give target, polarization and number of spectra (nspec). Per the JPL data notes, these are the only CW files.</li>
 <li><b>Filenames mislead in general:</b> the SHAPE set type inside a .obs file is the reliable test (<code>doppler</code> = CW, <code>delay-doppler</code> = DD).</li>
-</ul></body></html>
+</ul></div>
+<div id='tab-samp' style='display:none'><p class='note'>Samples: up to two runs per date per type, picked evenly across the day. Colour scale is clipped at the 1st and 99.5th percentiles so faint echoes show. Rows = code length (255 or 127).</p>
+<h2>Images by date and type</h2>
+<h3 style='font-size:15px;margin:14px 0 4px'>Fri Sep 18 2009 (DOY 261)</h3>
+<div class='note'><span class="tag" style="background:#2563eb">IMAGING</span> (16 on disk, showing 2)</div>
+<div style='display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 8px'>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-18_IMAGING_023620.png' alt='IMAGING 02:36:20' style='width:360px;display:block'><figcaption class='note'>02:36:20 UTC &middot; 255 rows</figcaption></figure>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-18_IMAGING_025950.png' alt='IMAGING 02:59:50' style='width:360px;display:block'><figcaption class='note'>02:59:50 UTC &middot; 255 rows</figcaption></figure>
+</div>
+<div class='note'><span class="tag" style="background:#9ca3af">LPBK</span> (only 1 on disk)</div>
+<div style='display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 8px'>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-18_LPBK_022638.png' alt='LPBK 02:26:38' style='width:360px;display:block'><figcaption class='note'>02:26:38 UTC &middot; 255 rows</figcaption></figure>
+</div>
+<div class='note'><span class="tag" style="background:#cbd5e1">SKY</span> (only 1 on disk)</div>
+<div style='display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 8px'>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-18_SKY_022956.png' alt='SKY 02:29:56' style='width:360px;display:block'><figcaption class='note'>02:29:56 UTC &middot; 255 rows</figcaption></figure>
+</div>
+<h3 style='font-size:15px;margin:14px 0 4px'>Sat Sep 19 2009 (DOY 262)</h3>
+<div class='note'><span class="tag" style="background:#2563eb">IMAGING</span> (46 on disk, showing 2)</div>
+<div style='display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 8px'>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-19_IMAGING_053221.png' alt='IMAGING 05:32:21' style='width:360px;display:block'><figcaption class='note'>05:32:21 UTC &middot; 255 rows</figcaption></figure>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-19_IMAGING_065458.png' alt='IMAGING 06:54:58' style='width:360px;display:block'><figcaption class='note'>06:54:58 UTC &middot; 127 rows</figcaption></figure>
+</div>
+<div class='note'><span class="tag" style="background:#9ca3af">LPBK</span></div>
+<div style='display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 8px'>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-19_LPBK_052351.png' alt='LPBK 05:23:51' style='width:360px;display:block'><figcaption class='note'>05:23:51 UTC &middot; 255 rows</figcaption></figure>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-19_LPBK_055915.png' alt='LPBK 05:59:15' style='width:360px;display:block'><figcaption class='note'>05:59:15 UTC &middot; 127 rows</figcaption></figure>
+</div>
+<div class='note'><span class="tag" style="background:#cbd5e1">SKY</span> (only 1 on disk)</div>
+<div style='display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 8px'>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-19_SKY_052813.png' alt='SKY 05:28:13' style='width:360px;display:block'><figcaption class='note'>05:28:13 UTC &middot; 255 rows</figcaption></figure>
+</div>
+<h3 style='font-size:15px;margin:14px 0 4px'>Sun Sep 20 2009 (DOY 263)</h3>
+<div class='note'><span class="tag" style="background:#2563eb">IMAGING</span> (115 on disk, showing 2)</div>
+<div style='display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 8px'>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-20_IMAGING_040153.png' alt='IMAGING 04:01:53' style='width:360px;display:block'><figcaption class='note'>04:01:53 UTC &middot; 255 rows</figcaption></figure>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-20_IMAGING_070412.png' alt='IMAGING 07:04:12' style='width:360px;display:block'><figcaption class='note'>07:04:12 UTC &middot; 255 rows</figcaption></figure>
+</div>
+<div class='note'><span class="tag" style="background:#9ca3af">LPBK</span> (only 1 on disk)</div>
+<div style='display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 8px'>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-20_LPBK_035133.png' alt='LPBK 03:51:33' style='width:360px;display:block'><figcaption class='note'>03:51:33 UTC &middot; 255 rows</figcaption></figure>
+</div>
+<div class='note'><span class="tag" style="background:#cbd5e1">SKY</span> (only 1 on disk)</div>
+<div style='display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 8px'>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-20_SKY_035640.png' alt='SKY 03:56:40' style='width:360px;display:block'><figcaption class='note'>03:56:40 UTC &middot; 255 rows</figcaption></figure>
+</div>
+<h3 style='font-size:15px;margin:14px 0 4px'>Mon Sep 21 2009 (DOY 264)</h3>
+<div class='note'><span class="tag" style="background:#2563eb">IMAGING</span> (124 on disk, showing 2)</div>
+<div style='display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 8px'>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-21_IMAGING_033553.png' alt='IMAGING 03:35:53' style='width:360px;display:block'><figcaption class='note'>03:35:53 UTC &middot; 255 rows</figcaption></figure>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-21_IMAGING_065957.png' alt='IMAGING 06:59:57' style='width:360px;display:block'><figcaption class='note'>06:59:57 UTC &middot; 255 rows</figcaption></figure>
+</div>
+<div class='note'><span class="tag" style="background:#9ca3af">LPBK</span> (only 1 on disk)</div>
+<div style='display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 8px'>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-21_LPBK_032532.png' alt='LPBK 03:25:32' style='width:360px;display:block'><figcaption class='note'>03:25:32 UTC &middot; 255 rows</figcaption></figure>
+</div>
+<div class='note'><span class="tag" style="background:#cbd5e1">SKY</span> (only 1 on disk)</div>
+<div style='display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 8px'>
+<figure style='margin:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px'><img src='samples/2009-09-21_SKY_033146.png' alt='SKY 03:31:46' style='width:360px;display:block'><figcaption class='note'>03:31:46 UTC &middot; 255 rows</figcaption></figure>
+</div>
+<h2>CW (continuous wave)</h2>
+<p class='note'>CW records are GSSR DAS files (<code>PSD*.rdf</code> = OC spectra, <code>VOLT*.rdf</code> = SC voltage). Their headers decode (target, polarization, nspec), but the numeric data layout is not decoded yet, so no CW image is shown here.</p>
+<table><tr><th class='l'>Date</th><th class='l'>File</th><th class='l'>Header</th><th class='l'>Image</th></tr>
+<tr><td class='l'>2009-09-18</td><td class='l'><code>PSD2009261.712.2000CO101.runs.rdf</code></td><td class='l'>target 2000CO101, pol OC, nspec 10, nchan 2, NASA/JPL GSSR DAS 11.7 8 CH CR2</td><td class='l'><span class='warn'>not decoded yet</span></td></tr>
+<tr><td class='l'>2009-09-18</td><td class='l'><code>VOLT2009261.713.2000CO101.file.rdf</code></td><td class='l'>target None, pol SC, nspec 1, nchan 1, None</td><td class='l'><span class='warn'>not decoded yet</span></td></tr>
+</table></div>
+<script>
+function showTab(id){
+  for (const t of ['tab-inv','tab-samp']) document.getElementById(t).style.display = (t===id)?'block':'none';
+  document.getElementById('b-inv').classList.toggle('on', id==='tab-inv');
+  document.getElementById('b-samp').classList.toggle('on', id==='tab-samp');
+}
+</script>
+</body></html>
