@@ -300,7 +300,7 @@ def scan_2009_level(root):
         status, note = "included", ""
         if p == MASTERLOG:
             cat, note = "MASTERLOG", "Goldstone observing log (DOY 261-264 only)"
-        elif name == "goldobsfiles":
+        elif name in ("goldobsfiles", "obsfiles"):
             cat, note = "OBS (existing)", "existing SHAPE obsfile(s); comparison target"
         elif name == "logs":
             cat, note = "LOGBOOK", "2000CO101 logbook (co.tex / .pdf) and sbinit logfile"
@@ -597,7 +597,8 @@ def main():
     days = build_days(blocks)
     top_items = scan_2009_level(DATA_ROOT)
     obs_list = [obs_summary(p, DATA_ROOT) for p in sorted(DATA_ROOT.rglob("*.obs"))
-                if not (set(p.relative_to(DATA_ROOT).parts) & EXCLUDED_DAYS)]
+                if not (set(p.relative_to(DATA_ROOT).parts) & EXCLUDED_DAYS)
+                and not re.search(r"_(26|28|29|30)[a-z]*\.", p.name)]
     generated = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     OUT_DIR.mkdir(exist_ok=True)
